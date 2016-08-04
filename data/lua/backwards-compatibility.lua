@@ -10,3 +10,8 @@ local helper = wesnoth.require "lua/helper.lua"
 function wesnoth.fire(name, cfg)
 	wesnoth.wml_actions[name](wesnoth.tovconfig(cfg or {}))
 end
+
+-- This is deprecated, as it was an improper port of the [modify_side] WML tag
+function wesnoth.modify_side(cfg)
+	wesnoth.wml_actions.modify_side(cfg)
+end
