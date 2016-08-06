@@ -3404,6 +3404,7 @@ int game_lua_kernel::intf_set_team_id(lua_State *L)
 int game_lua_kernel::intf_modify_ai_wml(lua_State *L)
 {
 	vconfig cfg(luaW_checkvconfig(L, 1));
+	WRN_LUA << "wesnoth.modify_ai_wml is deprecated\n";
 
 	side_filter ssf(cfg, &game_state_);
 	std::vector<int> sides = ssf.get_teams();
@@ -3411,6 +3412,23 @@ int game_lua_kernel::intf_modify_ai_wml(lua_State *L)
 	{
 		ai::manager::modify_active_ai_for_side(side_num,cfg.get_parsed_config());
 	}
+	return 0;
+}
+
+static int intf_modify_ai(lua_State *L, const char* action)
+{
+	int side_num = luaL_checkinteger(L, 1) - 1;
+	std::string path = luaL_checkstring(L, 2);
+	config cfg = config_of("action", action)("path", path);
+	if(strcmp(action, "delete") == 0) {
+		ai::manager::modify_active_ai_for_side(side_num, cfg);
+		return 0;
+	}
+	config component = luaW_checkconfig(L, 3);
+	size_t open_brak = path.find_last_of('[');
+	size_t dot = path.find_last_of('.');
+	cfg.add_child(path.substr(dot + 1, open_brak - dot - 1), component);
+	ai::manager::modify_active_ai_for_side(side_num, cfg);
 	return 0;
 }
 
@@ -3921,11 +3939,12 @@ static int intf_get_time_stamp(lua_State *L)
  * Lua frontend to the modify_ai functionality
  * - Arg 1: config.
  */
-static int intf_modify_ai(lua_State *L)
+static int intf_modify_ai_old(lua_State *L)
 {
 	config cfg;
 	luaW_toconfig(L, 1, cfg);
 	int side = cfg["side"];
+	WRN_LUA << "wesnoth.modify_ai is deprecated\n";
 	ai::manager::modify_active_ai_for_side(side, cfg);
 	return 0;
 }
@@ -4543,7 +4562,7 @@ game_lua_kernel::game_lua_kernel(CVideo * video, game_state & gs, play_controlle
 		{ "get_time_stamp",           &intf_get_time_stamp           },
 		{ "get_traits",               &intf_get_traits               },
 		{ "get_viewing_side",         &intf_get_viewing_side         },
-		{ "modify_ai",                &intf_modify_ai                },
+		{ "modify_ai",                &intf_modify_ai_old            },
 		{ "remove_modifications",     &intf_remove_modifications     },
 		{ "set_music",                &intf_set_music                },
 		{ "transform_unit",           &intf_transform_unit           },
@@ -4654,16 +4673,18 @@ game_lua_kernel::game_lua_kernel(CVideo * video, game_state & gs, play_controlle
 		{ "remove_shroud",             &dispatch2<&game_lua_kernel::intf_shroud_op, false >                 },
 		{ nullptr, nullptr }
 	};
-	/*
-	lua_cpp::Reg const cpp_callbacks[] = {
+	std::vector<lua_cpp::Reg> const cpp_callbacks = {
+		{"add_ai_component", std::bind(intf_modify_ai, _1, "add")},
+		{"delete_ai_component", std::bind(intf_modify_ai, _1, "delete")},
+		{"change_ai_component", std::bind(intf_modify_ai, _1, "change")},
+		{nullptr, nullptr}
 	};
-	*/
 	lua_getglobal(L, "wesnoth");
 	if (!lua_istable(L,-1)) {
 		lua_newtable(L);
 	}
 	luaL_setfuncs(L, callbacks, 0);
-	//lua_cpp::set_functions(L, cpp_callbacks);
+	lua_cpp::set_functions(L, cpp_callbacks);
 	lua_setglobal(L, "wesnoth");
 
 	// Create the getside metatable.
