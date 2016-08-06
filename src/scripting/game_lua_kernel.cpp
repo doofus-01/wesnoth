@@ -2366,6 +2366,7 @@ int game_lua_kernel::intf_find_cost_map(lua_State *L)
 int game_lua_kernel::intf_heal_unit(lua_State *L)
 {
 	vconfig cfg(luaW_checkvconfig(L, 1));
+	WRN_LUA << "wesnoth.heal_unit is deprecated\n";
 
 	const game_events::queued_event &event_info = get_event_info();
 
