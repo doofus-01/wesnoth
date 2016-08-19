@@ -740,7 +740,7 @@ int show_lua_console(lua_State * /*L*/, CVideo & video, lua_kernel_base * lk)
 	return 0;
 }
 
-int show_gamestate_inspector(CVideo & video, const vconfig & cfg)
+int show_gamestate_inspector(CVideo& video, const vconfig&)
 {
 	gui2::tgamestate_inspector inspect_dialog(cfg["name"]);
 	inspect_dialog.show(video);

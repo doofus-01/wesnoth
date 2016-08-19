@@ -189,11 +189,6 @@ public:
 	static int& debug_highlight(const map_location& loc);
 	static void clear_debug_highlights() { debugHighlights_.clear(); }
 
-
-	/** The playing team is the team whose turn it is. */
-	int playing_side() const { return activeTeam_ + 1; }
-
-
 	std::string current_team_name() const;
 
 	display_chat_manager & get_chat_manager() { return *chat_man_; }

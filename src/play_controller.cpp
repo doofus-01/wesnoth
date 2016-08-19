@@ -277,12 +277,11 @@ void play_controller::init(CVideo& video, const config& level)
 			// Find first team that is allowed to be observed.
 			// If not set here observer would be without fog until
 			// the first turn of observable side
-			size_t i;
-			for (i=0;i < gamestate().board_.teams().size();++i)
+			for(size_t i = 1;i <= gamestate().board_.teams().size();++i)
 			{
-				if (!gamestate().board_.teams()[i].get_disallow_observers())
+				if (!gamestate().board_.get_team(i).get_disallow_observers())
 				{
-					gui_->set_team(i);
+					gui_->set_team(i-1);
 				}
 			}
 		}
@@ -622,7 +621,7 @@ void play_controller::tab()
 		for (const unit& u : gamestate().board_.units()){
 			const map_location& loc = u.get_location();
 			if(!gui_->fogged(loc) &&
-					!(gamestate().board_.teams()[gui_->viewing_team()].is_enemy(u.side()) && u.invisible(loc)))
+					!(gamestate().board_.get_team(gui_->viewing_side()).is_enemy(u.side()) && u.invisible(loc)))
 				dictionary.insert(u.name());
 		}
 		//TODO List map labels
@@ -680,7 +679,7 @@ team& play_controller::current_team()
 const team& play_controller::current_team() const
 {
 	assert(current_side() > 0 && current_side() <= int(gamestate().board_.teams().size()));
-	return gamestate().board_.teams()[current_side() - 1];
+	return get_team(current_side());
 }
 
 /// @returns: the number n in [min, min+mod ) so that (n - num) is a multiple of mod.
@@ -700,7 +699,7 @@ static int modulo(int num, int mod, int min)
 
 bool play_controller::is_team_visible(int team_num, bool observer) const
 {
-	const team& t = gamestate().board_.teams()[team_num - 1];
+	const team& t = get_team(team_num);
 	if(observer) {
 		return !t.get_disallow_observers() && !t.is_empty();
 	}
@@ -790,7 +789,7 @@ void play_controller::process_keyup_event(const SDL_Event& event)
 				unit_movement_resetter move_reset(*u, u->side() != current_side());
 
 				mouse_handler_.set_current_paths(pathfind::paths(*u, false,
-				                       true, gamestate().board_.teams_[gui_->viewing_team()],
+				                       true, gamestate().board_.get_team(gui_->viewing_side()),
 				                       mouse_handler_.get_path_turns()));
 
 				gui_->highlight_reach(mouse_handler_.current_paths());
@@ -1120,8 +1119,8 @@ void play_controller::start_game()
 
 bool play_controller::can_use_synced_wml_menu() const
 {
-	const team& viewing_team = get_teams_const()[gui_->viewing_team()];
-	return gui_->viewing_team() == gui_->playing_team() && !events::commands_disabled && viewing_team.is_local_human() && !is_lingering() && !is_browsing();
+	const team& viewing_team = get_team(gui_->viewing_side());
+	return gui_->viewing_side() == gui_->playing_side() && !events::commands_disabled && viewing_team.is_local_human() && !is_lingering() && !is_browsing();
 }
 
 std::set<std::string> play_controller::all_players() const
@@ -1152,7 +1151,7 @@ void play_controller::play_side()
 		// This flag can be set by derived classes (in overridden functions).
 		player_type_changed_ = false;
 
-		statistics::reset_turn_stats(gamestate().board_.teams()[current_side() - 1].save_id());
+		statistics::reset_turn_stats(gamestate().board_.get_team(current_side()).save_id());
 
 		play_side_impl();
 
@@ -1259,7 +1258,7 @@ play_controller::scoped_savegame_snapshot::~scoped_savegame_snapshot()
 
 void play_controller::show_objectives() const
 {
-	const team& t = gamestate().board_.teams()[gui_->viewing_team()];
+	const team& t = get_team(gui_->viewing_side());
 	static const std::string no_objectives(_("No objectives available"));
 	std::string objectives = t.objectives();
 	gui2::show_transient_message(gui_->video(), get_scenario_name(), (objectives.empty() ? no_objectives : objectives), "", true);

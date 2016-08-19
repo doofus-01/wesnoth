@@ -177,6 +177,7 @@ class game_lua_kernel : public lua_kernel_base
 
 public:
 	std::vector<team> & teams();
+	team& get_team(int);
 	const gamemap & map() const;
 	/**
 		A value != 0 means that the shouldn't remove any units from the map, usually because

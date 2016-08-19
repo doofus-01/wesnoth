@@ -1640,7 +1640,7 @@ void leader_shares_keep_phase::execute()
 		//for each leader, check if he's allied and can reach our keep
 		for(path_map::const_iterator i = possible_moves.begin(); i != possible_moves.end(); ++i){
 			const unit_map::const_iterator itor = resources::units->find(i->first);
-			team &leader_team = resources::gameboard->teams()[itor->side() - 1];
+			const team &leader_team = resources::gameboard->get_team(itor->side());
 			if(itor != resources::units->end() && itor->can_recruit() && itor->side() != get_side() && (leader_team.total_income() + leader_team.gold() > leader_team.minimum_recruit_price())){
 				pathfind::paths::dest_vect::const_iterator tokeep = i->second.destinations.find(keep);
 				if(tokeep != i->second.destinations.end()){

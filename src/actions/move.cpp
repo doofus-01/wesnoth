@@ -345,8 +345,8 @@ namespace { // Private helpers for move_unit()
 		spectator_(move_spectator),
 		skip_sighting_(skip_sightings),
 		skip_ally_sighting_(skip_ally_sightings),
-		playing_team_is_viewing_(resources::screen->playing_team() ==
-		                         resources::screen->viewing_team()
+		playing_team_is_viewing_(resources::screen->playing_side() ==
+		                         resources::screen->viewing_side()
 		                         ||  resources::screen->show_everything()),
 		route_(route),
 		begin_(route.begin()),
@@ -363,7 +363,7 @@ namespace { // Private helpers for move_unit()
 		orig_dir_(move_it_->facing()),
 		goto_( is_ai_move() ? move_it_->get_goto() : route.back() ),
 		current_side_(orig_side_),
-		current_team_(&resources::gameboard->teams()[current_side_-1]),
+		current_team_(&resources::gameboard->get_team(current_side_)),
 		current_uses_fog_(current_team_->fog_or_shroud()  &&
 		                  current_team_->auto_shroud_updates()),
 		move_loc_(begin_),
@@ -791,7 +791,7 @@ namespace { // Private helpers for move_unit()
 
 		// Update the current unit data.
 		current_side_ = found ? move_it_->side() : orig_side_;
-		current_team_ = &resources::gameboard->teams()[current_side_-1];
+		current_team_ = &resources::gameboard->get_team(current_side_);
 		current_uses_fog_ = current_team_->fog_or_shroud()  &&
 		                    ( current_side_ != orig_side_  ||
 		                      current_team_->auto_shroud_updates() );
@@ -1238,8 +1238,8 @@ size_t move_unit_and_record(const std::vector<map_location> &steps,
 	//if we have no fog activated then we always skip sighted
 	if(resources::units->find(steps.front()) != resources::units->end())
 	{
-		const team &current_team = resources::gameboard->teams()[
-			resources::units->find(steps.front())->side() - 1];
+		const team &current_team = resources::gameboard->get_team(
+			resources::units->find(steps.front())->side());
 		continued_move |= !current_team.fog_or_shroud();
 	}
 	const bool skip_ally_sighted = !preferences::interrupt_when_ally_sighted();

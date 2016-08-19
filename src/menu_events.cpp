@@ -111,7 +111,9 @@ game_state & menu_handler::gamestate() const { return pc_.gamestate(); }
 game_data & menu_handler::gamedata() { return gamestate().gamedata_; }
 game_board & menu_handler::board() const { return gamestate().board_; }
 unit_map& menu_handler::units() { return gamestate().board_.units_; }
-std::vector<team>& menu_handler::teams() const { return gamestate().board_.teams_; }
+const std::vector<team>& menu_handler::teams() const { return gamestate().board_.teams_; }
+const team& menu_handler::get_team(int i) const { return gamestate().board_.get_team(i); }
+team& menu_handler::get_team(int i) { return gamestate().board_.get_team(i); }
 const gamemap& menu_handler::map() { return gamestate().board_.map(); }
 
 gui::floating_textbox& menu_handler::get_textbox(){
@@ -134,7 +136,7 @@ void menu_handler::objectives()
 
 void menu_handler::show_statistics(int side_num)
 {
-	team &current_team = teams()[side_num - 1];
+	const team &current_team = get_team(side_num);
 	// Current Player name
 	const std::string &player = current_team.side_name();
 	//add player's name to title of dialog
@@ -152,12 +154,12 @@ void menu_handler::unit_list()
 
 void menu_handler::status_table()
 {
-	gui2::tgame_stats dlg(board(), gui_->viewing_team());
+	gui2::tgame_stats dlg(board(), gui_->viewing_side());
 
 	dlg.show(gui_->video());
 
 	if(dlg.get_retval() == gui2::twindow::OK) {
-		gui_->scroll_to_leader(teams()[dlg.get_selected_index()].side());
+		gui_->scroll_to_leader(get_team(dlg.get_selected_index() + 1).side());
 	}
 }
 
@@ -240,8 +242,8 @@ bool menu_handler::has_friends() const
 		return !gui_->observers().empty();
 	}
 
-	for(size_t n = 0; n != teams().size(); ++n) {
-		if(n != gui_->viewing_team() && teams()[gui_->viewing_team()].team_name() == teams()[n].team_name() && teams()[n].is_network()) {
+	for(size_t n = 1; n <= teams().size(); ++n) {
+		if(int(n) != gui_->viewing_side() && get_team(gui_->viewing_side()).team_name() == get_team(n).team_name() && get_team(n).is_network()) {
 			return true;
 		}
 	}
@@ -272,7 +274,7 @@ void menu_handler::recruit(int side_num, const map_location &last_hex)
 		return;
 	}
 
-	gui2::tunit_recruit dlg(sample_units, teams()[side_num - 1]);
+	gui2::tunit_recruit dlg(sample_units, get_team(side_num));
 
 	dlg.show(gui_->video());
 
@@ -284,7 +286,7 @@ void menu_handler::recruit(int side_num, const map_location &last_hex)
 
 void menu_handler::repeat_recruit(int side_num, const map_location &last_hex)
 {
-	const std::string & last_recruit = teams()[side_num - 1].last_recruit();
+	const std::string & last_recruit = get_team(side_num).last_recruit();
 	if ( last_recruit.empty() == false )
 		do_recruit(last_recruit, side_num, last_hex);
 }
@@ -292,7 +294,7 @@ void menu_handler::repeat_recruit(int side_num, const map_location &last_hex)
 bool menu_handler::do_recruit(const std::string &name, int side_num,
 	const map_location &last_hex)
 {
-	team &current_team = teams()[side_num - 1];
+	team &current_team = get_team(side_num);
 
 	//search for the unit to be recruited in recruits
 	if ( !util::contains(actions::get_recruits(side_num, last_hex), name) )
@@ -340,7 +342,7 @@ void menu_handler::recall(int side_num, const map_location &last_hex)
 		return;
 	}
 
-	team &current_team = teams()[side_num - 1];
+	const team &current_team = get_team(side_num);
 
 	std::vector<unit_const_ptr> recall_list_team;
 	{ wb::future_map future; // ensures recall list has planned recalls removed
@@ -438,12 +440,12 @@ void menu_handler::show_enemy_moves(bool ignore_units, int side_num)
 	for(unit_map::iterator u = units().begin(); u != units().end(); ++u) {
 		bool invisible = u->invisible(u->get_location());
 
-		if (teams()[side_num - 1].is_enemy(u->side()) &&
+		if (get_team(side_num).is_enemy(u->side()) &&
 		    !gui_->fogged(u->get_location()) && !u->incapacitated() && !invisible)
 		{
 			const unit_movement_resetter move_reset(*u);
 			const pathfind::paths& path = pathfind::paths(*u, false, true,
-				teams()[gui_->viewing_team()], 0, false, ignore_units);
+				get_team(gui_->viewing_side()), 0, false, ignore_units);
 
 			gui_->highlight_another_reach(path);
 		}
@@ -452,7 +454,7 @@ void menu_handler::show_enemy_moves(bool ignore_units, int side_num)
 
 void menu_handler::toggle_shroud_updates(int side_num)
 {
-	team &current_team = teams()[side_num - 1];
+	const team &current_team = get_team(side_num);
 	bool auto_shroud = current_team.auto_shroud_updates();
 	// If we're turning automatic shroud updates on, then commit all moves
 	if (!auto_shroud) update_shroud_now(side_num);
@@ -519,8 +521,7 @@ bool menu_handler::end_turn(int side_num)
 		return false;
 	}
 
-	size_t team_num = static_cast<size_t>(side_num - 1);
-	if ( team_num < teams().size()  &&  teams()[team_num].no_turn_confirmation() ) {
+	if(size_t(side_num) <= teams().size() && get_team(side_num).no_turn_confirmation() ) {
 		// Skip the confirmations that follow.
 	}
 	// Ask for confirmation if the player hasn't made any moves.
@@ -610,12 +611,12 @@ unit_map::iterator menu_handler::current_unit()
 	const mouse_handler& mousehandler = pc_.get_mouse_handler_base();
 
 	unit_map::iterator res = board().find_visible_unit(mousehandler.get_last_hex(),
-		teams()[gui_->viewing_team()]);
+		get_team(gui_->viewing_side()));
 	if(res != units().end()) {
 		return res;
 	} else {
 		return board().find_visible_unit(mousehandler.get_selected_hex(),
-			teams()[gui_->viewing_team()]);
+			get_team(gui_->viewing_side()));
 	}
 }
 
@@ -749,7 +750,7 @@ void menu_handler::label_terrain(mouse_handler& mousehandler, bool team_only)
 		} else {
 			color = int_to_color(team::get_side_rgb(gui_->viewing_side()));
 		}
-		const terrain_label* res = gui_->labels().set_label(loc, label, gui_->viewing_team(), team_name, color);
+		const terrain_label* res = gui_->labels().set_label(loc, label, gui_->viewing_side(), team_name, color);
 		if (res)
 			resources::recorder->add_label(res);
 	}
@@ -787,7 +788,7 @@ void menu_handler::move_unit_to_loc(const unit_map::iterator &ui,
 {
 	assert(ui != units().end());
 
-	pathfind::marked_route route = mousehandler.get_route(&*ui, target, teams()[side_num - 1]);
+	pathfind::marked_route route = mousehandler.get_route(&*ui, target, get_team(side_num));
 
 	if(route.steps.empty())
 		return;
@@ -837,7 +838,7 @@ void menu_handler::execute_gotos(mouse_handler &mousehandler, int side)
 			if(fully_moved.count(current_loc))
 				continue;
 
-			pathfind::marked_route route = mousehandler.get_route(&*ui, goto_loc, teams()[side - 1]);
+			pathfind::marked_route route = mousehandler.get_route(&*ui, goto_loc, get_team(side));
 
 			if(route.steps.size() <= 1) { // invalid path
 				fully_moved.insert(current_loc);
@@ -1232,7 +1233,7 @@ void menu_handler::send_chat_message(const std::string& message, bool allies_onl
 		if (board().is_observer()) {
 			cfg["to_sides"] = game_config::observer_team_name;
 		} else {
-			cfg["to_sides"] = teams()[gui_->viewing_team()].allied_human_teams();
+			cfg["to_sides"] = get_team(gui_->viewing_side()).allied_human_teams();
 		}
 	}
 
@@ -1293,7 +1294,7 @@ void menu_handler::do_search(const std::string& new_search)
 				if(std::search(name.begin(), name.end(),
 						last_search_.begin(), last_search_.end(),
 						chars_equal_insensitive) != name.end()) {
-					if (!teams()[gui_->viewing_team()].is_enemy(ui->side()) ||
+					if(!get_team(gui_->viewing_side()).is_enemy(ui->side()) ||
 					    !ui->invisible(ui->get_location())) {
 						found = true;
 					}
@@ -1358,23 +1359,23 @@ void console_handler::do_droid() {
 		symbols["side"] = side_s;
 		command_failed(vgettext("Can't droid invalid side: '$side'.", symbols));
 		return;
-	} else if (menu_handler_.teams()[side - 1].is_network()) {
+	} else if (menu_handler_.get_team(side).is_network()) {
 		utils::string_map symbols;
 		symbols["side"] = std::to_string(side);
 		command_failed(vgettext("Can't droid networked side: '$side'.", symbols));
 		return;
-	} else if (menu_handler_.teams()[side - 1].is_local_human()) {
-		if (menu_handler_.teams()[side - 1].is_droid() ? action == " on" : action == " off") {
+	} else if (menu_handler_.get_team(side).is_local_human()) {
+		if (menu_handler_.get_team(side).is_droid() ? action == " on" : action == " off") {
 			return;
 		}
-		menu_handler_.teams()[side - 1].toggle_droid();
+		menu_handler_.get_team(side).toggle_droid();
 		if(team_num_ == side) {
 			if(playsingle_controller* psc = dynamic_cast<playsingle_controller*>(&menu_handler_.pc_)) {
 				psc->set_player_type_changed();
 			}
 		}
-	} else if (menu_handler_.teams()[side - 1].is_local_ai()) {
-//		menu_handler_.teams()[side - 1].make_human();
+	} else if (menu_handler_.get_team(side).is_local_ai()) {
+//		menu_handler_.get_team(side).make_human();
 //		menu_handler_.change_controller(std::to_string(side),"human");
 
 		utils::string_map symbols;
@@ -1397,22 +1398,22 @@ void console_handler::do_idle() {
 		symbols["side"] = side_s;
 		command_failed(vgettext("Can't idle invalid side: '$side'.", symbols));
 		return;
-	} else if (menu_handler_.teams()[side - 1].is_network()) {
+	} else if (menu_handler_.get_team(side).is_network()) {
 		utils::string_map symbols;
 		symbols["side"] = std::to_string(side);
 		command_failed(vgettext("Can't idle networked side: '$side'.", symbols));
 		return;
-	} else if (menu_handler_.teams()[side - 1].is_local_ai()) {
+	} else if (menu_handler_.get_team(side).is_local_ai()) {
 		utils::string_map symbols;
 		symbols["side"] = std::to_string(side);
 		command_failed(vgettext("Can't idle local ai side: '$side'.", symbols));
 		return;
-	} else if (menu_handler_.teams()[side - 1].is_local_human()) {
-		if (menu_handler_.teams()[side - 1].is_idle() ? action == " on" : action == " off") {
+	} else if (menu_handler_.get_team(side).is_local_human()) {
+		if (menu_handler_.get_team(side).is_idle() ? action == " on" : action == " off") {
 			return;
 		}
 		//toggle the proxy controller between idle / non idle
-		menu_handler_.teams()[side - 1].toggle_idle();
+		menu_handler_.get_team(side).toggle_idle();
 		if(team_num_ == side) {
 			if(playsingle_controller* psc = dynamic_cast<playsingle_controller*>(&menu_handler_.pc_)) {
 				psc->set_player_type_changed();
@@ -1489,11 +1490,11 @@ void console_handler::do_controller()
 		return;
 	}
 
-	std::string report = menu_handler_.teams()[side_num - 1].controller().to_string();
-	if (!menu_handler_.teams()[side_num - 1].is_proxy_human()) {
-		report += " (" + menu_handler_.teams()[side_num - 1].proxy_controller().to_string() + ")";
+	std::string report = menu_handler_.get_team(side_num).controller().to_string();
+	if (!menu_handler_.get_team(side_num).is_proxy_human()) {
+		report += " (" + menu_handler_.get_team(side_num).proxy_controller().to_string() + ")";
 	}
-	if (menu_handler_.teams()[side_num - 1].is_network()) {
+	if (menu_handler_.get_team(side_num).is_network()) {
 		report += " (networked)";
 	}
 
@@ -1914,7 +1915,7 @@ void menu_handler::user_command()
 void menu_handler::request_control_change ( int side_num, const std::string& player )
 {
 	std::string side = std::to_string(side_num);
-	if (teams()[side_num - 1].is_local_human() && player == preferences::login()) {
+	if (get_team(side_num).is_local_human() && player == preferences::login()) {
 		//this is already our side.
 		return;
 	} else {

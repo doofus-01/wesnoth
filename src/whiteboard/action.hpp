@@ -78,8 +78,6 @@ public:
 
 	/** @return pointer to the fake unit used only for visuals */
 	virtual fake_unit_ptr get_fake_unit() = 0;
-	/** Returns the index of the team that owns this action */
-	size_t team_index() const { return team_index_; }
 	/** Returns the number of the side that owns this action, i.e. the team index + 1. */
 	int side_number() const
 	{

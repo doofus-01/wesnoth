@@ -35,15 +35,17 @@ editor_action* editor_action_village::perform(map_context& mc) const
 	std::unique_ptr<editor_action> undo;
 
 	if(!mc.get_map().is_village(loc_)) return nullptr;
-	std::vector<team>& teams = mc.get_teams();
-	team *t = unsigned(side_number_) < teams.size() ? &teams[side_number_] : nullptr;
+	const team *t = nullptr;
+	if(side_number_ > 0 && unsigned(side_number_) < mc.teams().size()) {
+	   t = &mc.get_team(side_number_);
+	}
 	if (t && t->owns_village(loc_))	return nullptr;
 
 	undo.reset(new editor_action_village_delete(loc_));
 
-	for(std::vector<team>::iterator i = teams.begin(); i != teams.end(); ++i) {
-		if (i->owns_village(loc_))
-			undo.reset(new editor_action_village(loc_, i->side() -1));
+	for(const team& i : mc.teams()) {
+		if (i.owns_village(loc_))
+			undo.reset(new editor_action_village(loc_, i.side()));
 	}
 
 	perform_without_undo(mc);
@@ -52,14 +54,13 @@ editor_action* editor_action_village::perform(map_context& mc) const
 
 void editor_action_village::perform_without_undo(map_context& mc) const
 {
-	std::vector<team>& teams = mc.get_teams();
-	for(std::vector<team>::iterator i = teams.begin(); i != teams.end(); ++i) {
-		if (i->owns_village(loc_))
-				i->lose_village(loc_);
+	for(team& t : mc.get_teams()) {
+		if (t.owns_village(loc_))
+				t.lose_village(loc_);
 	}
 
 	//TODO 0 is a bad argument
-	teams[side_number_].get_village(loc_, 0, nullptr);
+	mc.get_team(side_number_).get_village(loc_, 0, nullptr);
 }
 
 
@@ -76,7 +77,7 @@ editor_action* editor_action_village_delete::perform(map_context& mc) const
 	for(std::vector<team>::const_iterator i = teams.begin(); i != teams.end(); ++i) {
 		if (i->owns_village(loc_)) {
 			perform_without_undo(mc);
-			undo.reset(new editor_action_village(loc_, i->side() -1));
+			undo.reset(new editor_action_village(loc_, i->side()));
 		}
 	}
 

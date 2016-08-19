@@ -91,13 +91,12 @@ public:
 
 	const std::vector<team>& get_teams() const {return dc_->teams();}
 
-	/** The playing team is the team whose turn it is. */
-	size_t playing_team() const { return activeTeam_; }
+	/** The playing side is the team whose turn it is. */
+	int playing_side() const { return activeTeam_ + 1; }
 
 	bool team_valid() const { return currentTeam_ < dc_->teams().size(); }
 
-	/** The viewing team is the team currently viewing the game. */
-	size_t viewing_team() const { return currentTeam_; }
+	/** The viewing side is the team currently viewing the game. */
 	int viewing_side() const { return currentTeam_ + 1; }
 
 	/**
@@ -207,7 +206,6 @@ public:
 
 	/** Virtual functions shadowed in game_display. These are needed to generate reports easily, without dynamic casting. Hope to factor out eventually. */
 	virtual const map_location & displayed_unit_hex() const { return map_location::null_location(); }
-	virtual int playing_side() const { return -100; } //In this case give an obviously wrong answer to fail fast, since this could actually cause a big bug. */
 	virtual const std::set<std::string>& observers() const { static const std::set<std::string> fake_obs = std::set<std::string> (); return fake_obs; }
 
 	/**

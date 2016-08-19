@@ -34,10 +34,10 @@ unit_drawer::unit_drawer(display & thedisp, std::map<surface,SDL_Rect> & bar_rec
 	teams(dc.teams()),
 	halo_man(thedisp.get_halo_manager()),
 	energy_bar_rects_(bar_rects),
-	viewing_team(disp.viewing_team()),
-	playing_team(disp.playing_team()),
-	viewing_team_ref(teams[viewing_team]),
-	playing_team_ref(teams[playing_team]),
+	viewing_side(disp.viewing_side()),
+	playing_side(disp.playing_side()),
+	viewing_team(dc.get_team(viewing_side)),
+	playing_team(dc.get_team(playing_side)),
 	is_blindfolded(disp.is_blindfolded()),
 	show_everything(disp.show_everything()),
 	sel_hex(disp.selected_hex()),
@@ -75,7 +75,7 @@ void unit_drawer::redraw_unit (const unit & u) const
 
 	std::string ellipse=u.image_ellipse();
 
-	if ( hidden || is_blindfolded || !u.is_visible_to_team(viewing_team_ref,map, show_everything) )
+	if ( hidden || is_blindfolded || !u.is_visible_to_team(viewing_team,map, show_everything) )
 	{
 		ac.clear_haloes();
 		if(ac.anim_) {
@@ -264,9 +264,9 @@ void unit_drawer::redraw_unit (const unit & u) const
 
 		const std::string* energy_file = &game_config::images::energy;
 
-		if(size_t(side) != viewing_team+1) {
+		if(side != viewing_side) {
 			if(disp.team_valid() &&
-			   viewing_team_ref.is_enemy(side)) {
+			   viewing_team.is_enemy(side)) {
 				if (preferences::show_enemy_orb() && !u.incapacitated())
 					orb_img = &enemy_orb;
 				else
@@ -281,7 +281,7 @@ void unit_drawer::redraw_unit (const unit & u) const
 				orb_img = &moved_orb;
 			else orb_img = nullptr;
 
-			if(playing_team == viewing_team && !u.user_end_turn()) {
+			if(playing_side == viewing_side && !u.user_end_turn()) {
 				if (movement_left == total_movement) {
 					if (preferences::show_unmoved_orb())
 						orb_img = &unmoved_orb;

@@ -193,11 +193,11 @@ void playsingle_controller::play_scenario_main_loop()
 			std::vector<bool> local_players(gamestate().board_.teams().size(), true);
 			//Preserve side controllers, becasue we won't get the side controoller updates again when replaying.
 			for(size_t i = 0; i < local_players.size(); ++i) {
-				local_players[i] = gamestate().board_.teams()[i].is_local();
+				local_players[i] = gamestate().board_.get_team(i+1).is_local();
 			}
 			reset_gamestate(*ex.level, (*ex.level)["replay_pos"]);
 			for(size_t i = 0; i < local_players.size(); ++i) {
-				resources::gameboard->teams()[i].set_local(local_players[i]);
+				resources::gameboard->get_team(i+1).set_local(local_players[i]);
 			}
 			play_scenario_init();
 			replay_.reset(new replay_controller(*this, false, ex.level));
@@ -422,7 +422,7 @@ void playsingle_controller::show_turn_dialog(){
 		gui_->recalculate_minimap();
 		std::string message = _("It is now $name|’s turn");
 		utils::string_map symbols;
-		symbols["name"] = gamestate().board_.teams()[current_side() - 1].side_name();
+		symbols["name"] = gamestate().board_.get_team(current_side()).side_name();
 		message = utils::interpolate_variables_into_string(message, &symbols);
 		gui2::show_transient_message(gui_->video(), "", message);
 	}
@@ -608,7 +608,7 @@ void playsingle_controller::force_end_turn(){
 
 void playsingle_controller::check_objectives()
 {
-	const team &t = gamestate().board_.teams()[gui_->viewing_team()];
+	const team &t = gamestate().board_.get_team(gui_->viewing_side());
 
 	if (!is_regular_game_end() && !is_browsing() && t.objectives_changed()) {
 		show_objectives();

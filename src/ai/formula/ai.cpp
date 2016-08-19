@@ -660,7 +660,7 @@ variant formula_ai::get_value(const std::string& key) const
 
 	} else if(key == "my_side")
 	{
-		return variant(new team_callable(resources::gameboard->teams()[get_side()-1]));
+		return variant(new team_callable(resources::gameboard->get_team(get_side())));
 
 	} else if(key == "my_side_number")
 	{
@@ -715,31 +715,21 @@ variant formula_ai::get_value(const std::string& key) const
 	} else if(key == "recruits_of_side")
 	{
 		std::vector<variant> vars;
-		std::vector< std::vector< variant> > tmp;
 
 		unit_types.build_all(unit_type::FULL);
 
-		for( size_t i = 0; i<resources::gameboard->teams().size(); ++i)
-		{
+		for(size_t i = 1; i <= resources::gameboard->teams().size(); ++i){
 			std::vector<variant> v;
-			tmp.push_back( v );
 
-			const std::set<std::string>& recruits = resources::gameboard->teams()[i].recruits();
-			if(recruits.empty()) {
-				continue;
-			}
-			for(std::set<std::string>::const_iterator str_it = recruits.begin(); str_it != recruits.end(); ++str_it)
-			{
-				const unit_type *ut = unit_types.find(*str_it);
-				if (ut)
-				{
-					tmp[i].push_back(variant(new unit_type_callable(*ut)));
+			for(const std::string& id : resources::gameboard->get_team(i).recruits()) {
+				const unit_type *ut = unit_types.find(id);
+				if(ut) {
+					v.push_back(variant(new unit_type_callable(*ut)));
 				}
 			}
-		}
 
-		for( size_t i = 0; i<tmp.size(); ++i)
-			vars.push_back( variant( &tmp[i] ));
+			vars.push_back(variant(&v));
+		}
 		return variant(&vars);
 
 	} else if(key == "units")
@@ -832,13 +822,9 @@ variant formula_ai::get_value(const std::string& key) const
 	} else if(key == "villages_of_side")
 	{
 		std::vector<variant> vars;
-		for(size_t i = 0; i<resources::gameboard->teams().size(); ++i)
+		for(size_t i = 1; i <= resources::gameboard->teams().size(); ++i)
 		{
-			vars.push_back( variant() );
-		}
-		for(size_t i = 0; i<vars.size(); ++i)
-		{
-			vars[i] = villages_from_set(resources::gameboard->teams()[i].villages());
+			vars.push_back(villages_from_set(resources::gameboard->get_team(i).villages()));
 		}
 		return variant(&vars);
 

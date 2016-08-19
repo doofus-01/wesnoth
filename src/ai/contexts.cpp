@@ -107,7 +107,7 @@ void readwrite_context_impl::raise_gamestate_changed() const
 
 team& readwrite_context_impl::current_team_w()
 {
-	return resources::gameboard->teams()[get_side()-1];
+	return resources::gameboard->get_team(get_side());
 }
 
 attack_result_ptr readwrite_context_impl::execute_attack_action(const map_location& attacker_loc, const map_location& defender_loc, int attacker_weapon){
@@ -336,7 +336,7 @@ void readonly_context_impl::diagnostic(const std::string& msg)
 
 const team& readonly_context_impl::current_team() const
 {
-	return resources::gameboard->teams()[get_side()-1];
+	return resources::gameboard->get_team(get_side());
 }
 
 
@@ -429,10 +429,9 @@ void readonly_context_impl::calculate_moves(const unit_map& units, std::map<map_
 
 			// Don't take friendly villages
 			if(!enemy && resources::gameboard->map().is_village(dst)) {
-				for(size_t n = 0; n != resources::gameboard->teams().size(); ++n) {
-					if(resources::gameboard->teams()[n].owns_village(dst)) {
-						int side = n + 1;
-						if (get_side() != side && !current_team().is_enemy(side)) {
+				for(size_t side = 1; side <= resources::gameboard->teams().size(); ++side) {
+					if(resources::gameboard->get_team(side).owns_village(dst)) {
+						if (get_side() != int(side) && !current_team().is_enemy(side)) {
 							friend_owns = true;
 						}
 

@@ -124,7 +124,9 @@ private:
 	game_data & gamedata();
 	game_board & board() const;
 	unit_map& units();
-	std::vector<team>& teams() const;
+	const std::vector<team>& teams() const;
+	team& get_team(int);
+	const team& get_team(int) const;
 	const gamemap& map();
 
 	const config& game_config_;

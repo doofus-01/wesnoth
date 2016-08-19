@@ -54,10 +54,10 @@ private:
 	const std::vector<team> & teams;
 	halo::manager & halo_man;
 	std::map<surface,SDL_Rect> & energy_bar_rects_;
-	size_t viewing_team;
-	size_t playing_team;
-	const team & viewing_team_ref;
-	const team & playing_team_ref;
+	int viewing_side;
+	int playing_side;
+	const team & viewing_team;
+	const team & playing_team;
 	bool is_blindfolded;
 	bool show_everything;
 	map_location sel_hex;

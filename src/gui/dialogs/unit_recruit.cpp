@@ -43,7 +43,7 @@ namespace gui2
 
 REGISTER_DIALOG(unit_recruit)
 
-tunit_recruit::tunit_recruit(std::vector<const unit_type*>& recruit_list, team& team)
+tunit_recruit::tunit_recruit(std::vector<const unit_type*>& recruit_list, const team& team)
 	: recruit_list_(recruit_list)
 	, team_(team)
 	, selected_index_(0)

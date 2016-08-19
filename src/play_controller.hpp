@@ -142,6 +142,9 @@ public:
 	const std::vector<team>& get_teams_const() const {
 		return gamestate().board_.teams_;
 	}
+	const team& get_team(int i) const {
+		return gamestate().board_.get_team(i);
+	}
 
 	const unit_map& get_units_const() const {
 		return gamestate().board_.units();

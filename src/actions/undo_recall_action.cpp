@@ -40,7 +40,7 @@ bool recall_action::undo(int side)
 {
 	game_display & gui = *resources::screen;
 	unit_map &   units = *resources::units;
-	team &current_team = resources::gameboard->teams()[side-1];
+	team &current_team = resources::gameboard->get_team(side);
 
 	const map_location & recall_loc = route.front();
 	unit_map::iterator un_it = units.find(recall_loc);
@@ -79,7 +79,7 @@ bool recall_action::undo(int side)
 bool recall_action::redo(int side)
 {
 	game_display & gui = *resources::screen;
-	team &current_team = resources::gameboard->teams()[side-1];
+	team &current_team = resources::gameboard->get_team(side);
 
 	map_location loc = route.front();
 	map_location from = recall_from;

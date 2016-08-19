@@ -326,7 +326,7 @@ void manager::post_delete_action(action_ptr action)
 	// If the last remaining action of the unit that owned this move is a move as well,
 	// adjust its appearance accordingly.
 
-	side_actions_ptr side_actions = resources::gameboard->teams().at(action->team_index()).get_side_actions();
+	side_actions_ptr side_actions = resources::gameboard->get_team(action->side_number()).get_side_actions();
 
 	unit_ptr actor = action->get_unit();
 	if(actor) { // The unit might have died following the execution of an attack
@@ -348,10 +348,10 @@ static void hide_all_plans()
 }
 
 /* private */
-void manager::update_plan_hiding(size_t team_index)
+void manager::update_plan_hiding(size_t side)
 {
 	//We don't control the "viewing" side ... we're probably an observer
-	if(!resources::gameboard->teams().at(team_index).is_local_human())
+	if(!resources::gameboard->get_team(side).is_local_human())
 		hide_all_plans();
 	else // normal circumstance
 	{
@@ -361,7 +361,7 @@ void manager::update_plan_hiding(size_t team_index)
 			if(!t.is_network_human())
 				team_plans_hidden_[t.side()-1] = false;
 
-			if(t.is_enemy(team_index+1) || team_plans_hidden_[t.side()-1])
+			if(t.is_enemy(side) || team_plans_hidden_[t.side()-1])
 				t.get_side_actions()->hide();
 			else
 				t.get_side_actions()->show();
@@ -370,7 +370,7 @@ void manager::update_plan_hiding(size_t team_index)
 	validate_viewer_actions();
 }
 void manager::update_plan_hiding()
-	{update_plan_hiding(viewer_team());}
+	{update_plan_hiding(viewer_side());}
 
 void manager::on_viewer_change(size_t team_index)
 {
@@ -398,11 +398,11 @@ void manager::on_change_controller(int side, const team& t)
 
 		//tell them our plans -- they may not have received them up to this point
 		size_t num_teams = resources::gameboard->teams().size();
-		for(size_t i=0; i<num_teams; ++i)
+		for(size_t i = 1; i <= num_teams; ++i)
 		{
-			team& local_team = resources::gameboard->teams().at(i);
+			team& local_team = resources::gameboard->get_team(i);
 			if(local_team.is_local_human() && !local_team.is_enemy(side))
-				resources::whiteboard->queue_net_cmd(i,local_team.get_side_actions()->make_net_cmd_refresh());
+				resources::whiteboard->queue_net_cmd(i-1,local_team.get_side_actions()->make_net_cmd_refresh());
 		}
 	}
 }
@@ -597,24 +597,24 @@ void manager::on_gamestate_change()
 void manager::send_network_data()
 {
 	size_t size = net_buffer_.size();
-	for(size_t team_index=0; team_index<size; ++team_index)
+	for(size_t side = 1; side <= size; ++side)
 	{
-		config& buf_cfg = net_buffer_[team_index];
+		config& buf_cfg = net_buffer_[side-1];
 
 		if(buf_cfg.empty())
 			continue;
 
 		config packet;
 		config& wb_cfg = packet.add_child("whiteboard",buf_cfg);
-		wb_cfg["side"] = static_cast<int>(team_index+1);
-		wb_cfg["to_sides"] = resources::gameboard->teams().at(team_index).allied_human_teams();
+		wb_cfg["side"] = side;
+		wb_cfg["to_sides"] = resources::gameboard->get_team(side).allied_human_teams();
 
 		buf_cfg = config();
 
 		resources::controller->send_to_wesnothd(packet, "whiteboard");
 
 		size_t count = wb_cfg.child_count("net_cmd");
-		LOG_WB << "Side " << (team_index+1) << " sent wb data (" << count << " cmds).\n";
+		LOG_WB << "Side " << side << " sent wb data (" << count << " cmds).\n";
 	}
 }
 
@@ -625,7 +625,7 @@ void manager::process_network_data(config const& cfg)
 		size_t count = wb_cfg.child_count("net_cmd");
 		LOG_WB << "Received wb data (" << count << ").\n";
 
-		team& team_from = resources::gameboard->teams().at(wb_cfg["side"]-1);
+		team& team_from = resources::gameboard->get_team(wb_cfg["side"]);
 		for(side_actions::net_cmd const& cmd : wb_cfg.child_range("net_cmd"))
 			team_from.get_side_actions()->execute_net_cmd(cmd);
 	}
@@ -1064,7 +1064,7 @@ int manager::get_spent_gold_for(int side)
 	if(wait_for_side_init_)
 		return 0;
 
-	return resources::gameboard->teams().at(side - 1).get_side_actions()->get_gold_spent();
+	return resources::gameboard->get_team(side).get_side_actions()->get_gold_spent();
 }
 
 void manager::options_dlg()

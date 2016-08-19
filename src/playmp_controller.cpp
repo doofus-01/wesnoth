@@ -243,7 +243,7 @@ void playmp_controller::linger()
 	if ( get_end_level_data_const().transient.reveal_map ) {
 		// Change the view of all players and observers
 		// to see the whole map regardless of shroud and fog.
-		update_gui_to_player(gui_->viewing_team(), true);
+		update_gui_to_player(gui_->viewing_side() - 1, true);
 	}
 	bool quit;
 	do {

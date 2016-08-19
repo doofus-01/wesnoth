@@ -173,13 +173,12 @@ turn_info::PROCESS_DATA_RESULT turn_info::process_network_data(const config& cfg
 		const int side = change["side"].to_int();
 		const bool is_local = change["is_local"].to_bool();
 		const std::string player = change["player"];
-		const size_t index = side - 1;
-		if(index >= resources::gameboard->teams().size()) {
+		if(side <= 0 || size_t(side) > resources::gameboard->teams().size()) {
 			ERR_NW << "Bad [change_controller] signal from server, side out of bounds: " << change.debug() << std::endl;
 			return PROCESS_CONTINUE;
 		}
 
-		const team & tm = resources::gameboard->teams().at(index);
+		const team & tm = resources::gameboard->get_team(side);
 		const bool was_local = tm.is_local();
 
 		resources::gameboard->side_change_controller(side, is_local, player);
@@ -188,8 +187,8 @@ turn_info::PROCESS_DATA_RESULT turn_info::process_network_data(const config& cfg
 			resources::controller->on_not_observer();
 		}
 
-		if (resources::gameboard->is_observer() || (resources::gameboard->teams())[resources::screen->playing_team()].is_local_human()) {
-			resources::screen->set_team(resources::screen->playing_team());
+		if (resources::gameboard->is_observer() || resources::gameboard->get_team(resources::screen->playing_side()).is_local_human()) {
+			resources::screen->set_team(resources::screen->playing_side() - 1);
 			resources::screen->redraw_everything();
 			resources::screen->recalculate_minimap();
 		} else if (tm.is_local_human()) {
@@ -209,11 +208,10 @@ turn_info::PROCESS_DATA_RESULT turn_info::process_network_data(const config& cfg
 	else if (const config &side_drop_c = cfg.child("side_drop"))
 	{
 		const int  side_drop = side_drop_c["side_num"].to_int(0);
-		size_t index = side_drop -1;
 
 		bool restart = side_drop == resources::screen->playing_side();
 
-		if (index >= resources::gameboard->teams().size()) {
+		if (side_drop <= 0 || size_t(side_drop) > resources::gameboard->teams().size()) {
 			ERR_NW << "unknown side " << side_drop << " is dropping game" << std::endl;
 			throw ingame_wesnothd_error("");
 		}
@@ -243,7 +241,7 @@ turn_info::PROCESS_DATA_RESULT turn_info::process_network_data(const config& cfg
 		std::vector<const team *> allies;
 		std::vector<std::string> options;
 
-		const team &tm = resources::gameboard->teams()[index];
+		const team &tm = resources::gameboard->get_team(side_drop);
 
 		for (const team &t : resources::gameboard->teams()) {
 			if (!t.is_enemy(side_drop) && !t.is_local_human() && !t.is_local_ai() && !t.is_network_ai() && !t.is_empty()

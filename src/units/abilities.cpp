@@ -335,7 +335,7 @@ bool unit::ability_active(const std::string& ability,const config& cfg,const map
 				return false;
 			if (i.has_attribute("is_enemy")) {
 				const display_context& dc = resources::filter_con->get_disp_context();
-				if (i["is_enemy"].to_bool() != dc.teams()[unit->side() - 1].is_enemy(side_)) {
+				if (i["is_enemy"].to_bool() != dc.get_team(unit->side()).is_enemy(side_)) {
 					continue;
 				}
 			}
@@ -935,7 +935,7 @@ bool attack_type::special_active(const config& special, AFFECTS whom,
 				return false;
 			if (i.has_attribute("is_enemy")) {
 				const display_context& dc = resources::filter_con->get_disp_context();
-				if (i["is_enemy"].to_bool() != dc.teams()[unit->side() - 1].is_enemy(self->side())) {
+				if (i["is_enemy"].to_bool() != dc.get_team(unit->side()).is_enemy(self->side())) {
 					continue;
 				}
 			}

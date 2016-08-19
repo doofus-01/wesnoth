@@ -109,6 +109,11 @@ public:
 		return teams_;
 	}
 
+	using display_context::get_team; // so as not to hide the const version
+	team& get_team(int i) {
+		return teams_[i-1];
+	}
+
 	map_labels& get_labels() {
 		return labels_;
 	}

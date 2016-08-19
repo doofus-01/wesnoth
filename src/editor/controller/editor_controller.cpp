@@ -544,7 +544,7 @@ hotkey::ACTION_STATE editor_controller::get_action_state(hotkey::HOTKEY_COMMAND 
 			return index == context_manager_->get_map_context().get_active_area()
 					? ACTION_SELECTED : ACTION_DESELECTED;
 		case editor::SIDE:
-			return static_cast<size_t>(index) == gui_->playing_team()
+			return index + 1 == gui_->playing_side()
 					? ACTION_SELECTED : ACTION_DESELECTED;
 		case editor::TIME:
 			return index ==	context_manager_->get_map_context().get_time_manager()->get_current_time()
@@ -942,7 +942,7 @@ bool editor_controller::execute_command(const hotkey::hotkey_command& cmd, int i
 			context_manager_->get_map_context().remove_side();
 			return true;
 		case HOTKEY_EDITOR_SIDE_EDIT:
-			context_manager_->edit_side_dialog(gui_->viewing_team());
+			context_manager_->edit_side_dialog(gui_->viewing_side());
 			return true;
 
 		// Transitions

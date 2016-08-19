@@ -194,7 +194,7 @@ public:
 		for(const auto & nick : nicks)
 		{
 			if(side_number_ <= static_cast<int>(resources::gameboard->teams().size())
-			   && resources::gameboard->teams().at(side_number_ - 1).current_player()
+			   && resources::gameboard->get_team(side_number_).current_player()
 				  == nick) {
 				std::string label_str = "<b>" + nick + "</b>";
 				model_.add_nick(nick, label_str);
@@ -244,7 +244,7 @@ public:
 							? static_cast<int>(resources::gameboard->teams().size())
 							: 0;
 		for(int side = 1; side <= sides; ++side) {
-			if(!resources::gameboard->teams().at(side - 1).hidden()) {
+			if(!resources::gameboard->get_team(side).hidden()) {
 				string_map symbols;
 				symbols["side"] = std::to_string(side);
 				std::string side_str = vgettext("Side $side", symbols);

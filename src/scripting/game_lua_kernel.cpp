@@ -904,7 +904,7 @@ int game_lua_kernel::intf_get_displayed_unit(lua_State *L)
 
 	unit_map::const_iterator ui = board().find_visible_unit(
 		game_display_->displayed_unit_hex(),
-		teams()[game_display_->viewing_team()],
+		get_team(game_display_->viewing_side()),
 		game_display_->show_everything());
 	if (!ui.valid()) return 0;
 
@@ -1134,12 +1134,12 @@ int game_lua_kernel::intf_get_variable(lua_State *L)
 int game_lua_kernel::intf_get_side_variable(lua_State *L)
 {
 
-	unsigned side_index = luaL_checkinteger(L, 1) - 1;
-	if(side_index >= teams().size()) {
+	unsigned side = luaL_checkinteger(L, 1);
+	if(side == 0 || side > teams().size()) {
 		return luaL_argerror(L, 1, "invalid side number");
 	}
 	char const *m = luaL_checkstring(L, 2);
-	variable_access_const v(m, teams()[side_index].variables());
+	variable_access_const v(m, get_team(side).variables());
 	return luaW_pushvariable(L, v) ? 1 : 0;
 }
 
@@ -1151,13 +1151,13 @@ int game_lua_kernel::intf_get_side_variable(lua_State *L)
  */
 int game_lua_kernel::intf_set_side_variable(lua_State *L)
 {
-	unsigned side_index = luaL_checkinteger(L, 1) - 1;
-	if(side_index >= teams().size()) {
+	unsigned side = luaL_checkinteger(L, 1);
+	if(side == 0 || side > teams().size()) {
 		return luaL_argerror(L, 1, "invalid side number");
 	}
 	char const *m = luaL_checkstring(L, 2);
 	//TODO: maybe support removing values with an empty arg3.
-	variable_access_create v(m, teams()[side_index].variables());
+	variable_access_create v(m, get_team(side).variables());
 	luaW_checkvariable(L, v, 3);
 	return 0;
 }
@@ -1259,7 +1259,6 @@ int game_lua_kernel::intf_shroud_op(lua_State *L, bool place_shroud)
 
 	// Filter the sides.
 	std::vector<int> sides = get_sides_vector(cfg);
-	size_t index;
 
 	// Filter the locations.
 	std::set<map_location> locs;
@@ -1268,8 +1267,7 @@ int game_lua_kernel::intf_shroud_op(lua_State *L, bool place_shroud)
 
 	for (const int &side_num : sides)
 	{
-		index = side_num - 1;
-		team &t = teams()[index];
+		team &t = get_team(side_num);
 
 		for (map_location const &loc : locs)
 		{
@@ -1314,10 +1312,15 @@ int game_lua_kernel::intf_highlight_hex(lua_State *L)
  */
 int game_lua_kernel::intf_is_enemy(lua_State *L)
 {
-	unsigned side_1 = luaL_checkint(L, 1) - 1;
-	unsigned side_2 = luaL_checkint(L, 2) - 1;
-	if (side_1 >= teams().size() || side_2 >= teams().size()) return 0;
-	lua_pushboolean(L, teams()[side_1].is_enemy(side_2 + 1));
+	unsigned side_1 = luaL_checkint(L, 1);
+	unsigned side_2 = luaL_checkint(L, 2);
+	if(side_1 == 0 || side_1 > teams().size()) {
+		return luaL_argerror(L, 1, "invalid side number");
+	}
+	if(side_2 == 0 || side_2 > teams().size()) {
+		return luaL_argerror(L, 1, "invalid side number");
+	}
+	lua_pushboolean(L, get_team(side_1).is_enemy(side_2));
 	return 1;
 }
 
@@ -1530,15 +1533,15 @@ int game_lua_kernel::intf_set_village_owner(lua_State *L)
 
 	int old_side = board().village_owner(loc) + 1;
 
-	if (new_side == old_side || new_side < 0 || new_side > static_cast<int>(teams().size()) || board().team_is_defeated(teams()[new_side - 1])) {
+	if (new_side == old_side || new_side < 0 || new_side > static_cast<int>(teams().size()) || board().team_is_defeated(get_team(new_side))) {
 		return 0;
 	}
 
 	if (old_side) {
-		teams()[old_side - 1].lose_village(loc);
+		get_team(old_side).lose_village(loc);
 	}
 	if (new_side) {
-		teams()[new_side - 1].get_village(loc, old_side, (luaW_toboolean(L, 4) ? &gamedata() : nullptr) );
+		get_team(new_side).get_village(loc, old_side, (luaW_toboolean(L, 4) ? &gamedata() : nullptr) );
 	}
 	return 0;
 }
@@ -2016,7 +2019,7 @@ int game_lua_kernel::intf_find_path(lua_State *L)
 	if (!calc) {
 		if (!u) return luaL_argerror(L, 1, "unit not found");
 
-		const team &viewing_team = board().teams()[(viewing_side ? viewing_side : u->side()) - 1];
+		const team &viewing_team = board().get_team(viewing_side ? viewing_side : u->side());
 		if (!ignore_teleport) {
 			teleport_locations = pathfind::get_teleport_locations(
 				*u, viewing_team, see_all, ignore_units);
@@ -2102,7 +2105,7 @@ int game_lua_kernel::intf_find_reach(lua_State *L)
 		lua_pop(L, 1);
 	}
 
-	const team &viewing_team = board().teams()[(viewing_side ? viewing_side : u->side()) - 1];
+	const team &viewing_team = board().get_team(viewing_side ? viewing_side : u->side());
 	pathfind::paths res(*u, ignore_units, !ignore_teleport,
 		viewing_team, additional_turns, see_all, ignore_units);
 
@@ -2288,7 +2291,7 @@ int game_lua_kernel::intf_find_cost_map(lua_State *L)
 	++arg;
 
 	// build cost_map
-	const team &viewing_team = board().teams()[(viewing_side ? viewing_side : 1) - 1];
+	const team &viewing_team = board().get_team(viewing_side ? viewing_side : 1);
 	pathfind::full_cost_map cost_map(
 			ignore_units, !ignore_teleport, viewing_team, see_all, ignore_units);
 
@@ -2574,7 +2577,7 @@ int game_lua_kernel::intf_erase_unit(lua_State *L)
 				return luaL_argerror(L, 1, "invalid location");
 			}
 		} else if (int side = lu->on_recall_list()) {
-			team &t = teams()[side - 1];
+			team &t = get_team(side);
 			// Should it use underlying ID instead?
 			t.recall_list().erase_if_matches_id(u->id());
 		} else {
@@ -2628,7 +2631,7 @@ int game_lua_kernel::intf_put_recall_unit(lua_State *L)
 	}
 
 	if (!side) side = u->side();
-	team &t = teams()[side - 1];
+	team &t = get_team(side);
 	// Avoid duplicates in the recall list.
 	size_t uid = u->underlying_id();
 	t.recall_list().erase_by_underlying_id(uid);
@@ -2663,7 +2666,7 @@ int game_lua_kernel::intf_extract_unit(lua_State *L)
 		assert(u);
 		u->anim_comp().clear_haloes();
 	} else if (int side = lu->on_recall_list()) {
-		team &t = teams()[side - 1];
+		team &t = get_team(side);
 		unit_ptr v = unit_ptr(new unit(*u));
 		t.recall_list().erase_if_matches_id(u->id());
 		u = v;
@@ -3131,7 +3134,7 @@ namespace
 
 		virtual config query_user(int side) const
 		{
-			bool is_local_ai = lua_kernel_base::get_lua_kernel<game_lua_kernel>(L).teams()[side - 1].is_local_ai();
+			bool is_local_ai = lua_kernel_base::get_lua_kernel<game_lua_kernel>(L).get_team(side).is_local_ai();
 			config cfg;
 			query_lua(side, is_local_ai ? ai_choice_index : user_choice_index, cfg);
 			return cfg;
@@ -3389,13 +3392,10 @@ int game_lua_kernel::intf_modify_side(lua_State *L)
 	std::string switch_ai = cfg["switch_ai"];
 
 	std::vector<int> sides = get_sides_vector(cfg);
-	size_t team_index;
 
 	for(const int &side_num : sides)
 	{
-		team_index = side_num - 1;
-
-		team & tm = teams()[team_index];
+		team & tm = get_team(side_num);
 
 		LOG_LUA << "modifying side: " << side_num << "\n";
 		if(!team_name.empty()) {
@@ -3495,7 +3495,7 @@ int game_lua_kernel::intf_modify_side(lua_State *L)
 		// rebuild the team's flag cache to reflect the changes. Note that
 		// this is not required for flag icons (used by the theme UI only).
 		if((!color.empty() || !flag.empty()) && game_display_) {
-			game_display_->reinit_flags_for_side(team_index);
+			game_display_->reinit_flags_for_side(side_num - 1);
 		}
 		// Change flag icon
 		config::attribute_value flag_icon = cfg["flag_icon"];
@@ -3552,7 +3552,7 @@ int game_lua_kernel::intf_get_sides(lua_State* L)
 	lua_createtable(L, sides.size(), 0);
 	unsigned index = 1;
 	for(int side : sides) {
-		luaW_pushteam(L, teams()[side - 1]);
+		luaW_pushteam(L, get_team(side));
 		lua_rawseti(L, -2, index);
 		++index;
 	}
@@ -4293,7 +4293,7 @@ int game_lua_kernel::intf_scroll(lua_State * L)
 		const std::vector<int> side_list = get_sides_vector(cfg);
 		bool side_match = false;
 		for (int side : side_list) {
-			if(teams()[side-1].is_local_human()) {
+			if(get_team(side).is_local_human()) {
 				side_match = true;
 				break;
 			}
@@ -4544,7 +4544,7 @@ int game_lua_kernel::intf_toggle_fog(lua_State *L, const bool clear)
 		if(side_num < 1 || static_cast<size_t>(side_num) > teams().size()) {
 			continue;
 		}
-		team &t = teams()[side_num-1];
+		team &t = get_team(side_num);
 		if(!clear) {
 			// Extend fog.
 			t.remove_fog_override(locs);
@@ -4580,6 +4580,10 @@ unit_map & game_lua_kernel::units() {
 
 std::vector<team> & game_lua_kernel::teams() {
 	return game_state_.board_.teams_;
+}
+
+team& game_lua_kernel::get_team(int i) {
+	return game_state_.board_.teams_[i - 1];
 }
 
 const gamemap & game_lua_kernel::map() const {

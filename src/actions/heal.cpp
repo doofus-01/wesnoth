@@ -349,7 +349,7 @@ void calculate_healing(int side, bool update_display)
 		}
 
 		const team & viewing_team =
-			resources::gameboard->teams()[resources::screen->viewing_team()];
+			resources::gameboard->get_team(resources::screen->viewing_side());
 		if (!resources::controller->is_skipping_replay() && update_display &&
 		    patient.is_visible_to_team(viewing_team, resources::gameboard->map(), false) )
 		{

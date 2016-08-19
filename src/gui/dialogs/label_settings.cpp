@@ -52,9 +52,9 @@ tlabel_settings::tlabel_settings(display_context& dc) : viewer(dc) {
 	for(size_t i = 0; i < hidden_categories.size(); i++) {
 		all_labels[hidden_categories[i]] = false;
 	}
-	for(size_t i = 0; i < dc.teams().size(); i++) {
-		const team& team = dc.teams()[i];
-		const std::string label_cat_key = "side:" + std::to_string(i + 1);
+	for(size_t i = 1; i <= dc.teams().size(); i++) {
+		const team& team = dc.get_team(i);
+		const std::string label_cat_key = "side:" + std::to_string(i);
 		if(team.hidden()) {
 			labels_display[label_cat_key] = "";
 			continue;
@@ -67,7 +67,7 @@ tlabel_settings::tlabel_settings(display_context& dc) : viewer(dc) {
 			team_name = _("Unknown");
 		}
 		string_map subst;
-		subst["side_number"] = std::to_string(i + 1);
+		subst["side_number"] = std::to_string(i);
 		subst["name"] = team_name;
 		labels_display[label_cat_key] = vgettext("Side $side_number ($name)", subst);
 	}
@@ -86,8 +86,8 @@ void tlabel_settings::pre_show(twindow& window) {
 				// This means it's a hidden side, so don't show it.
 				continue;
 			}
-			int team = lexical_cast<int>(category.substr(5)) - 1;
-			Uint32 which_color = game_config::tc_info(viewer.teams()[team].color())[0];
+			int team = lexical_cast<int>(category.substr(5));
+			Uint32 which_color = game_config::tc_info(viewer.get_team(team).color())[0];
 			std::ostringstream sout;
 			sout << "<span color='#" << std::hex << which_color << "'>" << name << "</span>";
 			name = sout.str();

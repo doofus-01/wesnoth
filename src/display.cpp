@@ -80,8 +80,8 @@ int display::last_zoom_ = SmallZoom;
 
 void display::parse_team_overlays()
 {
-	const team& curr_team = dc_->teams()[playing_team()];
-	const team& prev_team = dc_->teams()[playing_team()-1 < dc_->teams().size() ? playing_team()-1 : dc_->teams().size()-1];
+	const team& curr_team = dc_->get_team(playing_side());
+	const team& prev_team = dc_->get_team(playing_side() == 1 ? dc_->teams().size() : playing_side() - 1);
 	for (const game_display::overlay_map::value_type i : *overlays_) {
 		const overlay& ov = i.second;
 		if (!ov.team_name.empty() &&
@@ -378,6 +378,7 @@ surface display::get_flag(const map_location& loc)
 }
 #endif
 
+// TODO: Make this take a 1-indexed side number instead of a 0-indexed team index
 void display::set_team(size_t teamindex, bool show_everything)
 {
 	assert(teamindex < dc_->teams().size());
@@ -2897,7 +2898,7 @@ void display::draw_hex(const map_location& loc) {
 
 		for( ; overlays.first != overlays.second; ++overlays.first) {
 			if ((overlays.first->second.team_name == "" ||
-					overlays.first->second.team_name.find(dc_->teams()[viewing_team()].team_name()) != std::string::npos)
+					overlays.first->second.team_name.find(dc_->get_team(viewing_side()).team_name()) != std::string::npos)
 					&& !(fogged(loc) && !overlays.first->second.visible_in_fog))
 			{
 

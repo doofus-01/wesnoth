@@ -190,12 +190,12 @@ void game_display::highlight_hex(map_location hex)
 {
 	wb::future_map_if future(!synced_context::is_synced()); /**< Lasts for whole method. */
 
-	const unit *u = resources::gameboard->get_visible_unit(hex, dc_->teams()[viewing_team()], !dont_show_all_);
+	const unit *u = resources::gameboard->get_visible_unit(hex, dc_->get_team(viewing_side()), !dont_show_all_);
 	if (u) {
 		displayedUnitHex_ = hex;
 		invalidate_unit();
 	} else {
-		u = resources::gameboard->get_visible_unit(mouseoverHex_, dc_->teams()[viewing_team()], !dont_show_all_);
+		u = resources::gameboard->get_visible_unit(mouseoverHex_, dc_->get_team(viewing_side()), !dont_show_all_);
 		if (u) {
 			// mouse moved from unit hex to non-unit hex
 			if (dc_->units().count(selectedHex_)) {
@@ -217,7 +217,7 @@ void game_display::display_unit_hex(map_location hex)
 
 	wb::future_map_if future(!synced_context::is_synced()); /**< Lasts for whole method. */
 
-	const unit *u = resources::gameboard->get_visible_unit(hex, dc_->teams()[viewing_team()], !dont_show_all_);
+	const unit *u = resources::gameboard->get_visible_unit(hex, dc_->get_team(viewing_side()), !dont_show_all_);
 	if (u) {
 		displayedUnitHex_ = hex;
 		invalidate_unit();
@@ -305,7 +305,7 @@ void game_display::draw_hex(const map_location& loc)
 
 	if(on_map && loc == mouseoverHex_) {
 		tdrawing_layer hex_top_layer = LAYER_MOUSEOVER_BOTTOM;
-		const unit *u = resources::gameboard->get_visible_unit(loc, dc_->teams()[viewing_team()] );
+		const unit *u = resources::gameboard->get_visible_unit(loc, dc_->get_team(viewing_side()));
 		if( u != nullptr ) {
 			hex_top_layer = LAYER_MOUSEOVER_TOP;
 		}
@@ -315,12 +315,12 @@ void game_display::draw_hex(const map_location& loc)
 					image::get_texture("misc/hover-hex-top.png~RC(magenta>gold)", image::SCALED_TO_HEX));
 			drawing_buffer_add(LAYER_MOUSEOVER_BOTTOM, loc, xpos, ypos,
 					image::get_texture("misc/hover-hex-bottom.png~RC(magenta>gold)", image::SCALED_TO_HEX));
-		} else if(dc_->teams()[currentTeam_].is_enemy(u->side())) {
+		} else if(dc_->get_team(viewing_side()).is_enemy(u->side())) {
 			drawing_buffer_add( hex_top_layer, loc, xpos, ypos,
 					image::get_texture("misc/hover-hex-enemy-top.png~RC(magenta>red)", image::SCALED_TO_HEX));
 			drawing_buffer_add(LAYER_MOUSEOVER_BOTTOM, loc, xpos, ypos,
 					image::get_texture("misc/hover-hex-enemy-bottom.png~RC(magenta>red)", image::SCALED_TO_HEX));
-		} else if(dc_->teams()[currentTeam_].side() == u->side()) {
+		} else if(viewing_side() == u->side()) {
 			drawing_buffer_add( hex_top_layer, loc, xpos, ypos,
 					image::get_texture("misc/hover-hex-top.png~RC(magenta>green)", image::SCALED_TO_HEX));
 			drawing_buffer_add(LAYER_MOUSEOVER_BOTTOM, loc, xpos, ypos,
@@ -337,12 +337,12 @@ void game_display::draw_hex(const map_location& loc)
 					image::get_image("misc/hover-hex-top.png~RC(magenta>gold)", image::SCALED_TO_HEX));
 			drawing_buffer_add(LAYER_MOUSEOVER_BOTTOM, loc, xpos, ypos,
 					image::get_image("misc/hover-hex-bottom.png~RC(magenta>gold)", image::SCALED_TO_HEX));
-		} else if(dc_->teams()[currentTeam_].is_enemy(u->side())) {
+		} else if(dc_->get_team(viewing_side()).is_enemy(u->side())) {
 			drawing_buffer_add( hex_top_layer, loc, xpos, ypos,
 					image::get_image("misc/hover-hex-enemy-top.png~RC(magenta>red)", image::SCALED_TO_HEX));
 			drawing_buffer_add(LAYER_MOUSEOVER_BOTTOM, loc, xpos, ypos,
 					image::get_image("misc/hover-hex-enemy-bottom.png~RC(magenta>red)", image::SCALED_TO_HEX));
-		} else if(dc_->teams()[currentTeam_].side() == u->side()) {
+		} else if(viewing_side() == u->side()) {
 			drawing_buffer_add( hex_top_layer, loc, xpos, ypos,
 					image::get_image("misc/hover-hex-top.png~RC(magenta>green)", image::SCALED_TO_HEX));
 			drawing_buffer_add(LAYER_MOUSEOVER_BOTTOM, loc, xpos, ypos,
@@ -563,8 +563,8 @@ void game_display::draw_movement_info(const map_location& loc)
 	// When out-of-turn, it's still interesting to check out the terrain defs of the selected unit
 	else if (selectedHex_.valid() && loc == mouseoverHex_)
 	{
-		const unit_map::const_iterator selectedUnit = resources::gameboard->find_visible_unit(selectedHex_,dc_->teams()[currentTeam_]);
-		const unit_map::const_iterator mouseoveredUnit = resources::gameboard->find_visible_unit(mouseoverHex_,dc_->teams()[currentTeam_]);
+		const unit_map::const_iterator selectedUnit = resources::gameboard->find_visible_unit(selectedHex_,dc_->get_team(viewing_side()));
+		const unit_map::const_iterator mouseoveredUnit = resources::gameboard->find_visible_unit(mouseoverHex_,dc_->get_team(viewing_side()));
 		if(selectedUnit != dc_->units().end() && mouseoveredUnit == dc_->units().end()) {
 			// Display the def% of this terrain
 			int def =  100 - selectedUnit->defense_modifier(get_map().get_terrain(loc));
@@ -773,7 +773,7 @@ std::string game_display::current_team_name() const
 {
 	if (team_valid())
 	{
-		return dc_->teams()[currentTeam_].team_name();
+		return dc_->get_team(viewing_side()).team_name();
 	}
 	return std::string();
 }

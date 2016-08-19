@@ -167,7 +167,7 @@ namespace { // Support functions
 				continue;
 			}
 			pathfind::shortest_path_calculator calc(fake_unit,
-					resources::gameboard->teams()[fake_unit.side()-1],
+					resources::gameboard->get_team(fake_unit.side()),
 					resources::gameboard->teams(),
 					*game_map);
 
@@ -442,18 +442,18 @@ WML_HANDLER_FUNCTION(recall,, cfg)
 	vconfig unit_filter_cfg(temp_config);
 	const vconfig & leader_filter = cfg.child("secondary_unit");
 
-	for(int index = 0; index < int(resources::gameboard->teams().size()); ++index) {
-		LOG_NG << "for side " << index + 1 << "...\n";
-		const std::string player_id = resources::gameboard->teams()[index].save_id();
+	for(int side = 1; side <= int(resources::gameboard->teams().size()); ++side) {
+		LOG_NG << "for side " << side + 1 << "...\n";
+		const std::string player_id = resources::gameboard->get_team(side).save_id();
 
-		if(resources::gameboard->teams()[index].recall_list().size() < 1) {
+		if(resources::gameboard->get_team(side).recall_list().size() < 1) {
 			DBG_NG << "recall list is empty when trying to recall!\n"
-				   << "player_id: " << player_id << " side: " << index+1 << "\n";
+				   << "player_id: " << player_id << " side: " << side << "\n";
 			continue;
 		}
 
-		recall_list_manager & avail = resources::gameboard->teams()[index].recall_list();
-		std::vector<unit_map::unit_iterator> leaders = resources::units->find_leaders(index + 1);
+		recall_list_manager & avail = resources::gameboard->get_team(side).recall_list();
+		std::vector<unit_map::unit_iterator> leaders = resources::units->find_leaders(side);
 
 		const unit_filter ufilt(unit_filter_cfg, resources::filter_con);
 		const unit_filter lfilt(leader_filter, resources::filter_con); // Note that if leader_filter is null, this correctly gives a null filter that matches all units.
@@ -906,7 +906,7 @@ WML_HANDLER_FUNCTION(unit,, cfg)
 		DBG_NG << parsed_cfg.debug();
 		return;
 	}
-	team &tm = resources::gameboard->teams().at(side-1);
+	team &tm = resources::gameboard->get_team(side);
 
 	unit_creator uc(tm,resources::gameboard->map().starting_position(side));
 

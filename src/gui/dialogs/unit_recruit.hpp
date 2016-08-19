@@ -24,7 +24,7 @@ namespace gui2 {
 class tunit_recruit : public tdialog
 {
 public:
-	tunit_recruit(std::vector<const unit_type*>& recruit_list, team& team);
+	tunit_recruit(std::vector<const unit_type*>& recruit_list, const team& team);
 
 	int get_selected_index() const
 	{
@@ -45,7 +45,7 @@ private:
 
 	std::vector<const unit_type*>& recruit_list_;
 
-	team& team_;
+	const team& team_;
 
 	int selected_index_;
 };

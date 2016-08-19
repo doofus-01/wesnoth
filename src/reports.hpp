@@ -49,6 +49,7 @@ public:
 		context(const display_context & dc, display & disp, const tod_manager & tod, std::shared_ptr<wb::manager> wb, boost::optional<events::mouse_handler &> mhb) : dc_(dc), disp_(disp), tod_(tod), wb_(wb), mhb_(mhb) {}
 
 		const std::vector<team> & teams() { return dc_.teams(); }
+		const team& get_team(int i) { return dc_.get_team(i); }
 		const unit_map & units() { return dc_.units(); }
 		const gamemap & map() { return dc_.map(); }
 

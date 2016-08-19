@@ -56,7 +56,7 @@ REGISTER_DIALOG(game_stats)
 
 tgame_stats::tgame_stats(game_board& board, const int viewing_team)
 	: board_(board)
-	, viewing_team_(board_.teams()[viewing_team])
+	, viewing_team_(board_.get_team(viewing_team))
 {
 	for(const auto& team : board_.teams()) {
 		team_data_.push_back(board_.calculate_team_data(team, team.side()));

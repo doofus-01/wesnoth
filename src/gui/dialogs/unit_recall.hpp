@@ -36,7 +36,7 @@ class tunit_recall : public tdialog
 	typedef std::vector<unit_const_ptr> recalls_ptr_vector;
 
 public:
-	tunit_recall(recalls_ptr_vector& recall_list, team& team);
+	tunit_recall(recalls_ptr_vector& recall_list, const team& team);
 
 	int get_selected_index() const
 	{
@@ -46,7 +46,7 @@ public:
 private:
 	recalls_ptr_vector& recall_list_;
 
-	team& team_;
+	const team& team_;
 
 	int selected_index_;
 

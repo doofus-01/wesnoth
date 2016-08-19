@@ -107,13 +107,12 @@ void recruit::execute(bool& success, bool& complete)
 {
 	assert(valid());
 	temporary_unit_hider const raii(*fake_unit_);
-	int const side_num = team_index() + 1;
 	//Give back the spent gold so we don't get "not enough gold" message
-	resources::gameboard->teams().at(team_index()).get_side_actions()->change_gold_spent_by(-cost_);
-	bool const result = resources::controller->get_menu_handler().do_recruit(unit_name_, side_num, recruit_hex_);
+	resources::gameboard->get_team(side_number()).get_side_actions()->change_gold_spent_by(-cost_);
+	bool const result = resources::controller->get_menu_handler().do_recruit(unit_name_, side_number(), recruit_hex_);
 	//If it failed, take back the gold
 	if (!result) {
-		resources::gameboard->teams().at(team_index()).get_side_actions()->change_gold_spent_by(cost_);
+		resources::gameboard->get_team(side_number()).get_side_actions()->change_gold_spent_by(cost_);
 	}
 	success = complete = result;
 }
@@ -127,7 +126,7 @@ void recruit::apply_temp_modifier(unit_map& unit_map)
 			<< "] at position " << temp_unit_->get_location() << ".\n";
 
 	// Add cost to money spent on recruits.
-	resources::gameboard->teams().at(team_index()).get_side_actions()->change_gold_spent_by(cost_);
+	resources::gameboard->get_team(side_number()).get_side_actions()->change_gold_spent_by(cost_);
 
 	// Temporarily insert unit into unit_map
 	// unit map takes ownership of temp_unit
@@ -170,10 +169,9 @@ unit_ptr recruit::create_corresponding_unit()
 {
 	unit_type const* type = unit_types.find(unit_name_);
 	assert(type);
-	int side_num = team_index() + 1;
 	//real_unit = false needed to avoid generating random traits and causing OOS
 	bool real_unit = false;
-	unit_ptr result(new unit(*type, side_num, real_unit));
+	unit_ptr result(new unit(*type, side_number(), real_unit));
 	result->set_movement(0, true);
 	result->set_attacks(0);
 	return result; //ownership gets transferred to returned unique_ptr copy
@@ -187,16 +185,16 @@ action::error recruit::check_validity() const
 	}
 	//Check that unit to recruit is still in side's recruit list
 	//FIXME: look at leaders extra_recruit too.
-	const std::set<std::string>& recruits = resources::gameboard->teams()[team_index()].recruits();
+	const std::set<std::string>& recruits = resources::gameboard->get_team(side_number()).recruits();
 	if(recruits.find(unit_name_) == recruits.end()) {
 		return UNIT_UNAVAILABLE;
 	}
 	//Check that there is still enough gold to recruit this unit
-	if(temp_unit_->cost() > resources::gameboard->teams()[team_index()].gold()) {
+	if(temp_unit_->cost() > resources::gameboard->get_team(side_number()).gold()) {
 		return NOT_ENOUGH_GOLD;
 	}
 	//Check that there is a leader available to recruit this unit
-	if(!find_recruiter(team_index(),get_recruit_hex())) {
+	if(!find_recruiter(side_number(),get_recruit_hex())) {
 		return NO_LEADER;
 	}
 

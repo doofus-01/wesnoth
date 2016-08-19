@@ -54,7 +54,7 @@ namespace gui2
 
 REGISTER_DIALOG(unit_recall)
 
-tunit_recall::tunit_recall(recalls_ptr_vector& recall_list, team& team)
+tunit_recall::tunit_recall(recalls_ptr_vector& recall_list, const team& team)
 	: recall_list_(recall_list)
 	, team_(team)
 	, selected_index_()
@@ -290,7 +290,7 @@ void tunit_recall::dismiss_unit(twindow& window)
 	dump_recall_list_to_console(team_.recall_list());
 
 	// Find the unit in the recall list.
-	unit_ptr dismissed_unit = team_.recall_list().find_if_matches_id(u.id());
+	unit_const_ptr dismissed_unit = team_.recall_list().find_if_matches_id(u.id());
 	assert(dismissed_unit);
 
 	// Record the dismissal, then delete the unit.
